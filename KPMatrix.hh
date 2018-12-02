@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <exception>
+#include <iostream>
 #include <random>
 #include <stdexcept>
 
@@ -16,6 +17,9 @@ class KPVector {
         void set(int i, double v);
         double squared_norm();
         double sample();
+
+        friend std::ostream& operator<<(std::ostream& out, const KPVector& v);
+
 
     private:
         int dim;
@@ -31,8 +35,21 @@ class KPVector {
             Node(Node* p);
             Node(Node* p, double w);
             ~Node();
+
+            friend std::ostream& operator<<(std::ostream& out, const Node& n) {
+                out << "Node: weight " << n.weight << ", sign " << n.sign << std::endl;
+                if(n.left != nullptr) {
+                    out << "Left: " << *(n.left) << std::endl;
+                }
+                if(n.right != nullptr) {
+                    out << "Right: " << *(n.right) << std::endl;
+                }
+                return out;
+            }
         };
 
+        // Finds pointer to the leaf node for a given index
+        // If it doesn't yet exist, creates it
         Node* find(int i);
 
         Node* root;
@@ -78,6 +95,7 @@ KPVector::Node* KPVector::find(int i) {
 
     // While range has more than one leaf in it, descend
     while(high - low > 1) {
+        assert(high > low);
         int mid = low + ((high - low) / 2);
         if(i < mid) {
             // go left
@@ -85,8 +103,8 @@ KPVector::Node* KPVector::find(int i) {
             
             if(cur_node->left == nullptr) {
                 cur_node->left = new KPVector::Node(cur_node);
-                cur_node = cur_node->left;
             }
+            cur_node = cur_node->left;
         }
         else {
             // go right
@@ -94,8 +112,8 @@ KPVector::Node* KPVector::find(int i) {
 
             if(cur_node->right == nullptr) {
                 cur_node->right = new KPVector::Node(cur_node);
-                cur_node = cur_node->right;
             }
+            cur_node = cur_node->right;
         }
     }
 
@@ -108,7 +126,7 @@ double KPVector::get(int i) {
     assert(0 <= i && i < dim);
 
     Node* leaf = find(i);
-    assert(leaf->sign != 0); // make sure it's actually a leaf
+    assert(leaf->sign != 0); // make sure it's actually a leaf, and has been set
 
     double value = std::sqrt(leaf->weight);    
     if(leaf->sign == -1) {
@@ -138,7 +156,8 @@ double KPVector::squared_norm() {
 double KPVector::sample() {
     Node* cur_node = root;
     std::uniform_real_distribution<double> unif_dist(0, 1);
-    std::default_random_engine rand_eng;
+    std::random_device rd;
+    std::default_random_engine rand_eng(rd());
 
     while(cur_node->sign == 0) {
         if(cur_node->left == nullptr && cur_node->right == nullptr) {
@@ -169,4 +188,9 @@ double KPVector::sample() {
         value = -value;
     }
     return value;
+}
+
+std::ostream& operator<<(std::ostream& out, const KPVector& v) {
+    out << "Root: " << *(v.root);
+    return out;
 }
