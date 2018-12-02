@@ -6,6 +6,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include <vector>
 
 
 class KPVector {
@@ -13,11 +14,11 @@ class KPVector {
         KPVector(int n);
         ~KPVector();
 
+        int dimension();
         double get(int i);
         void set(int i, double v);
         double squared_norm();
-        double sample_index();
-        double sample_value();
+        int sample_index();
 
         friend std::ostream& operator<<(std::ostream& out, const KPVector& v);
 
@@ -82,6 +83,10 @@ KPVector::Node::~Node() {
 
 KPVector::~KPVector() {
     delete root;
+}
+
+int KPVector::dimension() {
+    return dim;
 }
 
 
@@ -154,7 +159,7 @@ double KPVector::squared_norm() {
     return root->weight;
 }
 
-double KPVector::sample_index() {
+int KPVector::sample_index() {
     Node* cur_node = root;
     std::uniform_real_distribution<double> unif_dist(0, 1);
     std::random_device rd;
@@ -190,21 +195,102 @@ double KPVector::sample_index() {
 
     int index = low;
     return index;
-
-/*    double value = std::sqrt(cur_node->weight);    
-    if(cur_node->sign == -1) {
-        value = -value;
-    }
-    return value;
-    */
-}
-
-double KPVector::sample_value() {
-    int index = sample_index();
-    return get(index);
 }
 
 std::ostream& operator<<(std::ostream& out, const KPVector& v) {
     out << "Root: " << *(v.root);
     return out;
+}
+
+
+
+class KPMatrix {
+    public:
+        KPMatrix(int m, int n);
+        ~KPMatrix();
+
+        int num_rows();
+        int num_cols();
+        double get(int i, int j);
+        void set(int i, int j, double v);
+        double squared_frobenius_norm();
+        // Get norm of a row
+        double row_squared_norm(int i);
+
+        // Sample over D_{A~}
+        double sample_a_row();
+        // Sample over D_{A_i}
+        double sample_from_row(int i);
+
+    private:
+        int dim_m, dim_n;
+        std::vector<KPVector*> vectors;
+        double sum_vector_norms;
+
+        // Norms of each row
+        KPVector* vector_norms;
+};
+
+
+KPMatrix::KPMatrix(int m, int n) {
+    assert(m > 0 && n > 0);
+    dim_m = m;
+    dim_n = n;
+
+    vectors.reserve(m);
+    for(int i = 0; i < m; ++i) {
+        vectors.push_back(new KPVector(n));
+    }
+    
+    vector_norms = new KPVector(n);
+    sum_vector_norms = 0;
+}
+
+KPMatrix::~KPMatrix() {
+    delete vector_norms;
+    for(KPVector* v : vectors) {
+        delete v;
+    }
+}
+
+int KPMatrix::num_rows() {
+    return dim_m;
+}
+
+int KPMatrix::num_cols() {
+    return dim_n;
+}
+
+double KPMatrix::get(int i, int j) {
+    assert(0 <= i && i < dim_m);
+    assert(0 <= j && j < dim_n);
+    return vectors[i]->get(j);
+}
+
+void KPMatrix::set(int i, int j, double v) {
+    assert(0 <= i && i < dim_m);
+    assert(0 <= j && j < dim_n);
+    double old_row_norm = vectors[i]->squared_norm();
+    vectors[i]->set(j, v);
+    double new_row_norm = vectors[i]->squared_norm();
+    vector_norms->set(i, new_row_norm);
+    sum_vector_norms += (new_row_norm - old_row_norm);
+}
+
+double KPMatrix::squared_frobenius_norm() {
+    return sum_vector_norms; 
+}
+
+double KPMatrix::row_squared_norm(int i) {
+    assert(0 <= i && i < dim_m);
+    return vectors[i]->squared_norm();
+}
+
+double KPMatrix::sample_a_row() {
+    return vector_norms->sample_index();
+}
+
+double KPMatrix::sample_from_row(int i) {
+    assert(0 <= i && i < dim_m);
+    return vectors[i]->sample_index();
 }
