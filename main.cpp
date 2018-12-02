@@ -21,7 +21,8 @@ int main() {
     std::cout << "----" << std::endl;
 
     for(int i = 0; i < 10; ++i) {
-        std::cout << test_vec.sample() << std::endl;
+        std::cout << "Sample value: " << test_vec.sample_value() << std::endl;
+        std::cout << "Sample index: " << test_vec.sample_index() << std::endl;
     }
 
     std::cout << "----" << std::endl;

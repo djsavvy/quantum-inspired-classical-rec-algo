@@ -16,7 +16,8 @@ class KPVector {
         double get(int i);
         void set(int i, double v);
         double squared_norm();
-        double sample();
+        double sample_index();
+        double sample_value();
 
         friend std::ostream& operator<<(std::ostream& out, const KPVector& v);
 
@@ -153,41 +154,54 @@ double KPVector::squared_norm() {
     return root->weight;
 }
 
-double KPVector::sample() {
+double KPVector::sample_index() {
     Node* cur_node = root;
     std::uniform_real_distribution<double> unif_dist(0, 1);
     std::random_device rd;
     std::default_random_engine rand_eng(rd());
 
+    int low = 0, high = dim;
+    int mid = low + ((high - low) / 2);
     while(cur_node->sign == 0) {
+        mid = low + ((high - low) / 2);
         if(cur_node->left == nullptr && cur_node->right == nullptr) {
             throw std::logic_error("Vector is empty -- cannot sample.");
         }
-        else if(cur_node->weight == 0) {
-            return 0;
-        }
         else if(cur_node->left == nullptr) {
             cur_node = cur_node->right;
+            low = mid;
         } 
         else if(cur_node->right == nullptr) {
             cur_node = cur_node->left;
+            high = mid;
         }
         else {
             double rand = unif_dist(rand_eng);
             if(rand <= (cur_node->left->weight / cur_node->weight)) {
                 cur_node = cur_node->left;
+                high = mid;
             }
             else {
                 cur_node = cur_node->right;
+                low = mid;
             }
         }
     }
 
-    double value = std::sqrt(cur_node->weight);    
+    int index = low;
+    return index;
+
+/*    double value = std::sqrt(cur_node->weight);    
     if(cur_node->sign == -1) {
         value = -value;
     }
     return value;
+    */
+}
+
+double KPVector::sample_value() {
+    int index = sample_index();
+    return get(index);
 }
 
 std::ostream& operator<<(std::ostream& out, const KPVector& v) {
