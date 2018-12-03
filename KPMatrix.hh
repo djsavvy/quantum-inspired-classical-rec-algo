@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <exception>
@@ -14,11 +15,11 @@ class KPVector {
         KPVector(int n);
         ~KPVector();
 
-        int dimension();
-        double get(int i);
+        int dimension() const;
+        double get(int i) const; 
         void set(int i, double v);
-        double squared_norm();
-        int sample_index();
+        double squared_norm() const;
+        int sample_index() const;
 
         friend std::ostream& operator<<(std::ostream& out, const KPVector& v);
 
@@ -52,9 +53,9 @@ class KPVector {
 
         // Finds pointer to the leaf node for a given index
         // If it doesn't yet exist, creates it
-        Node* find(int i);
+        Node* find(int i) const;
 
-        Node* root;
+        mutable Node* root;
 };
 
 
@@ -85,14 +86,14 @@ KPVector::~KPVector() {
     delete root;
 }
 
-int KPVector::dimension() {
+int KPVector::dimension() const {
     return dim;
 }
 
 
 // Finds pointer to the leaf node for a given index
 // If it doesn't yet exist, creates it
-KPVector::Node* KPVector::find(int i) {
+KPVector::Node* KPVector::find(int i) const {
     // bounds check
     assert(0 <= i && i < dim);
 
@@ -128,7 +129,7 @@ KPVector::Node* KPVector::find(int i) {
     return cur_node;
 }
 
-double KPVector::get(int i) {
+double KPVector::get(int i) const {
     assert(0 <= i && i < dim);
 
     Node* leaf = find(i);
@@ -155,11 +156,11 @@ void KPVector::set(int i, double v) {
     }
 }
 
-double KPVector::squared_norm() {
+double KPVector::squared_norm() const {
     return root->weight;
 }
 
-int KPVector::sample_index() {
+int KPVector::sample_index() const {
     Node* cur_node = root;
     std::uniform_real_distribution<double> unif_dist(0, 1);
     std::random_device rd;
@@ -209,18 +210,18 @@ class KPMatrix {
         KPMatrix(int m, int n);
         ~KPMatrix();
 
-        int num_rows();
-        int num_cols();
-        double get(int i, int j);
+        int num_rows() const;
+        int num_cols() const;
+        double get(int i, int j) const;
         void set(int i, int j, double v);
-        double squared_frobenius_norm();
+        double squared_frobenius_norm() const;
         // Get norm of a row
-        double row_squared_norm(int i);
+        double row_squared_norm(int i) const;
 
         // Sample over D_{A~}
-        double sample_a_row();
+        double sample_a_row() const;
         // Sample over D_{A_i}
-        double sample_from_row(int i);
+        double sample_from_row(int i) const;
 
     private:
         int dim_m, dim_n;
@@ -253,15 +254,15 @@ KPMatrix::~KPMatrix() {
     }
 }
 
-int KPMatrix::num_rows() {
+int KPMatrix::num_rows() const {
     return dim_m;
 }
 
-int KPMatrix::num_cols() {
+int KPMatrix::num_cols() const {
     return dim_n;
 }
 
-double KPMatrix::get(int i, int j) {
+double KPMatrix::get(int i, int j) const {
     assert(0 <= i && i < dim_m);
     assert(0 <= j && j < dim_n);
     return vectors[i]->get(j);
@@ -277,20 +278,56 @@ void KPMatrix::set(int i, int j, double v) {
     sum_vector_norms += (new_row_norm - old_row_norm);
 }
 
-double KPMatrix::squared_frobenius_norm() {
+double KPMatrix::squared_frobenius_norm() const {
     return sum_vector_norms; 
 }
 
-double KPMatrix::row_squared_norm(int i) {
+double KPMatrix::row_squared_norm(int i) const {
     assert(0 <= i && i < dim_m);
     return vectors[i]->squared_norm();
 }
 
-double KPMatrix::sample_a_row() {
+double KPMatrix::sample_a_row() const {
     return vector_norms->sample_index();
 }
 
-double KPMatrix::sample_from_row(int i) {
+double KPMatrix::sample_from_row(int i) const {
     assert(0 <= i && i < dim_m);
     return vectors[i]->sample_index();
+}
+
+
+double estimate_dot_product(const KPVector& x, const KPVector& y, 
+        double epsilon, double delta) {
+    
+    assert(delta > 0);
+    assert(epsilon > 0);
+    assert(x.dimension() == y.dimension());
+
+    int num_means = static_cast<int>(std::ceil(-6 * std::log(delta)));
+    double samples_per_mean = static_cast<int>(std::ceil(9/(2 * epsilon * epsilon)));
+    std::vector<double> means;
+    means.reserve(num_means);
+
+    // Actually do the sampling
+    for(int i = 0; i < num_means; ++i) {
+        double sum = 0;
+
+        for(int j = 0; j < samples_per_mean; ++j) {
+            int index = x.sample_index();
+            sum += (y.get(i) / x.get(i));
+        }
+
+        double mean = sum/samples_per_mean;
+        means.push_back(mean);
+    }
+
+    // Take median
+    std::nth_element(means.begin(), means.begin() + num_means/2 + 1, means.end());
+    if(num_means % 2 == 1) {
+        return means[(num_means / 2)];
+    }
+    else {
+        return (means[(num_means / 2) - 1] + means[(num_means / 2)])/2;
+    }
 }
