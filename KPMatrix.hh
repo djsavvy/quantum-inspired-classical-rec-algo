@@ -219,14 +219,14 @@ class KPMatrix {
         double row_squared_norm(int i) const;
 
         // Sample over D_{A~}
-        double sample_a_row() const;
+        int sample_a_row() const;
         // Sample over D_{A_i}
         double sample_from_row(int i) const;
 
     private:
         int dim_m, dim_n;
         std::vector<KPVector*> vectors;
-        double sum_vector_norms;
+        double sum_vector_sq_norms;
 
         // Norms of each row
         KPVector* vector_norms;
@@ -244,7 +244,7 @@ KPMatrix::KPMatrix(int m, int n) {
     }
     
     vector_norms = new KPVector(n);
-    sum_vector_norms = 0;
+    sum_vector_sq_norms = 0;
 }
 
 KPMatrix::~KPMatrix() {
@@ -271,15 +271,15 @@ double KPMatrix::get(int i, int j) const {
 void KPMatrix::set(int i, int j, double v) {
     assert(0 <= i && i < dim_m);
     assert(0 <= j && j < dim_n);
-    double old_row_norm = vectors[i]->squared_norm();
+    double old_row_sq_norm = vectors[i]->squared_norm();
     vectors[i]->set(j, v);
-    double new_row_norm = vectors[i]->squared_norm();
-    vector_norms->set(i, new_row_norm);
-    sum_vector_norms += (new_row_norm - old_row_norm);
+    double new_row_sq_norm = vectors[i]->squared_norm();
+    vector_norms->set(i, std::sqrt(new_row_sq_norm));
+    sum_vector_sq_norms += (new_row_sq_norm - old_row_sq_norm);
 }
 
 double KPMatrix::squared_frobenius_norm() const {
-    return sum_vector_norms; 
+    return sum_vector_sq_norms; 
 }
 
 double KPMatrix::row_squared_norm(int i) const {
@@ -287,7 +287,7 @@ double KPMatrix::row_squared_norm(int i) const {
     return vectors[i]->squared_norm();
 }
 
-double KPMatrix::sample_a_row() const {
+int KPMatrix::sample_a_row() const {
     return vector_norms->sample_index();
 }
 
