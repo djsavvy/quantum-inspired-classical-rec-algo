@@ -315,7 +315,7 @@ double estimate_dot_product(const KPVector& x, const KPVector& y,
 
         for(int j = 0; j < samples_per_mean; ++j) {
             int index = x.sample_index();
-            sum += (y.get(i) / x.get(i));
+            sum += (y.get(index) / x.get(index));
         }
 
         double mean = sum/samples_per_mean;
