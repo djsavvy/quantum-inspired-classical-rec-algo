@@ -221,7 +221,7 @@ class KPMatrix {
         // Sample over D_{A~}
         int sample_a_row() const;
         // Sample over D_{A_i}
-        double sample_from_row(int i) const;
+        int sample_from_row(int i) const;
 
     private:
         int dim_m, dim_n;
@@ -291,7 +291,7 @@ int KPMatrix::sample_a_row() const {
     return vector_norms->sample_index();
 }
 
-double KPMatrix::sample_from_row(int i) const {
+int KPMatrix::sample_from_row(int i) const {
     assert(0 <= i && i < dim_m);
     return vectors[i]->sample_index();
 }
