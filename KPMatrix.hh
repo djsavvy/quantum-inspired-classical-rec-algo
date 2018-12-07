@@ -224,7 +224,8 @@ class KPMatrix {
         int sample_from_row(int i) const;
 
     private:
-        int dim_m, dim_n;
+        int dim_m;
+        int dim_n;
         std::vector<KPVector*> vectors;
         double sum_vector_sq_norms;
 

@@ -73,8 +73,19 @@ class ModFKV {
                 }
             }
 
-            
+            // Compute Singular Value Decomposition of W
+            Eigen::BDCSVD<Eigen::MatrixXd> svd(W, Eigen::ComputeThinU);
+            new_rank = 0;
+            while(new_rank < svd.singularValues().size() 
+                    && svd.singularValues()(new_rank) > threshold) {
+                ++new_rank;
+            }
+            assert(new_rank > 0);
 
+            singular_values = svd.singularValues();
+            singular_values.resize(new_rank);
+            left_singular_vectors = svd.matrixU();
+            left_singular_vectors.resize(Eigen::NoChange, new_rank);
         }
 
     private:
@@ -84,4 +95,8 @@ class ModFKV {
 
         std::vector<int> row_indices;
         std::vector<int> col_indices;
+
+        int new_rank;
+        Eigen::VectorXd singular_values;
+        Eigen::MatrixXd left_singular_vectors; // The vectors are the columns
 };
