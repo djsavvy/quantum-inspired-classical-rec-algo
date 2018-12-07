@@ -3,6 +3,9 @@
 
 int main() {
 
+    // TODO: use initializer lists for everything
+    // TODO: use trailing underscores for member variables
+
     KPMatrix test_matr(5, 5);
     test_matr.set(0, 2, -3);
     test_matr.set(3, 4, 5);
