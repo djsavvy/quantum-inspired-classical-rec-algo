@@ -8,17 +8,17 @@
 class TangSampler {
     public:
         TangSampler(const KPMatrix& A, double threshold, double epsilon, double kappa) 
-            : A_(A)    
+            : A_(A)
+            , rank_reduction_(A,
+                    threshold * (1 - kappa / 2),
+                    epsilon,
+                    2 * kappa / (2 - kappa)
+              ) 
         {
             // Bounds check
             assert(0 < epsilon);
             assert(0 < kappa && kappa <= 1);
             assert(0 < threshold);
-
-            rank_reduction_ = ModFKV(A, 
-                    threshold * (1 - (kappa / 2)),
-                    epsilon,
-                    2 * kappa / (2 - kappa));
         }
 
         // Sample for a given user
