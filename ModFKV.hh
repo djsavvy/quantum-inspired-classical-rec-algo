@@ -86,7 +86,32 @@ class ModFKV {
             singular_values.resize(new_rank);
             left_singular_vectors = svd.matrixU();
             left_singular_vectors.resize(Eigen::NoChange, new_rank);
+
+            // Compute columns of the V_hat representation for use in the main algorithm
+            V_hat_columns.reserve(p);
+            for(int i = 0; i < p; ++i) {
+                V_hat_columns[i] = KPVector(A.num_cols());
+                for(int j = 0; j < A.num_cols(); ++j) {
+                    double value = 0;
+                    for(int x = 0; x < p; ++x) {
+                        value += A.get(row_indices[x], j) * singular_values(x, i);
+                    }
+                    value /= singular_values(i);
+
+                    V_hat_columns[i].set(j, value);
+                }
+            }
         }
+
+        int get_rank() const {
+            return p;
+        }
+
+        const KPVector& get_V_hat_column(int index) const {
+            assert(0 <= index && index < V_hat_columns.size());
+            return V_hat_columns[index];
+        }
+
 
     private:
         double K;
@@ -99,4 +124,6 @@ class ModFKV {
         int new_rank;
         Eigen::VectorXd singular_values;
         Eigen::MatrixXd left_singular_vectors; // The vectors are the columns
+
+        std::vector<KPVector> V_hat_columns;
 };

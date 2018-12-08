@@ -217,6 +217,7 @@ class KPMatrix {
         double squared_frobenius_norm() const;
         // Get norm of a row
         double row_squared_norm(int i) const;
+        const KPVector& get_row(int i) const;
 
         // Sample over D_{A~}
         int sample_a_row() const;
@@ -286,6 +287,11 @@ double KPMatrix::squared_frobenius_norm() const {
 double KPMatrix::row_squared_norm(int i) const {
     assert(0 <= i && i < dim_m);
     return vectors[i]->squared_norm();
+}
+
+const KPVector& KPMatrix::get_row(int i) const {
+    assert(0 <= i && i < dim_m);
+    return *(vectors[i]);
 }
 
 int KPMatrix::sample_a_row() const {
