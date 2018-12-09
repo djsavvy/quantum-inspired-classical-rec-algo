@@ -3,6 +3,7 @@
 #include "Eigen/Dense"
 #include "KPMatrix.hh"
 #include "ModFKV.hh"
+#include "SampleFromDist.hh"
 
 
 class TangSampler {
@@ -40,9 +41,7 @@ class TangSampler {
             }
 
             // Sample from est V_hat^T
-
-
-
+            return sample_from_distribution(est, rank_reduction_);
         }
 
     private:
@@ -50,37 +49,5 @@ class TangSampler {
         ModFKV rank_reduction_;
         double epsilon_;
         double kappa_;
-        
 
 };
-
-int sample_from_distribution(const KPVector& vector, const ModFKV& rank_reduction) {
-    assert(vector.dimension() == rank_reduction.get_rank());
-
-    KPVector distribution_P(vector.dimension());
-    for(int i = 0; i < vector.dimension(); ++i) {
-        distribution_P.set(i, vector.get(i) * std::sqrt(rank_reduction.get_V_hat_column(i).squared_norm()));
-    }
-
-    // Sample until we don't reject one
-    while(true) {
-        int col = distribution_P.sample_index();
-        int sample = rank_reduction.get_V_hat_column(col).sample_index();
-
-        double denominator = 0;
-        for(int j = 0; j < vector.dimension(); ++j) {
-            double wV_j = vector.get(j) * rank_reduction.get_V_hat_column(j).get(col);
-            denominator += wV_j * wV_j;
-        }
-        denominator *= vector.dimension();
-
-        double numerator = 0;
-        for(int j = 0; j < ; ++j) {
-            numerator += vector.get(j) * rank_reduction.get_V_hat_column(col).get(j);
-        }
-
-        
-        
-
-    }
-}
