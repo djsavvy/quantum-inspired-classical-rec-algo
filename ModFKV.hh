@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <random>
 #include <set>
 
@@ -32,8 +33,11 @@ class ModFKV {
                     (K * K * K * K) / (e_bar * e_bar * e_bar),
                     (K * K) / (e_bar * e_bar * e_bar * e_bar)
                 )
-            ));
-            assert( 0 < p && p <= A.num_rows() );
+                ));
+            if(p <= 0 || p > A.num_rows()) {
+                p = A.num_rows();
+                // std::cout << p << std::endl;
+            }
             
             // Sample rows from D_{A~}
             row_indices.reserve(p);
@@ -73,6 +77,8 @@ class ModFKV {
                 }
             }
 
+            // std::cout << "Computed W" << std::endl;
+
             // Compute Singular Value Decomposition of W
             Eigen::BDCSVD<Eigen::MatrixXd> svd(W, Eigen::ComputeThinU);
             new_rank = 0;
@@ -80,31 +86,40 @@ class ModFKV {
                     && svd.singularValues()(new_rank) > threshold) {
                 ++new_rank;
             }
-            assert(new_rank > 0);
+            if(new_rank <= 0) new_rank = 1;
 
             singular_values = svd.singularValues();
-            singular_values.resize(new_rank);
+            singular_values.resize(p);
             left_singular_vectors = svd.matrixU();
-            left_singular_vectors.resize(Eigen::NoChange, new_rank);
+            left_singular_vectors.resize(Eigen::NoChange, p);
+
+            // std::cout << "Done with SVD" << std::endl;
 
             // Compute columns of the V_hat representation for use in the main algorithm
             V_hat_columns.reserve(p);
             for(int i = 0; i < p; ++i) {
-                V_hat_columns[i] = KPVector(A.num_cols());
+                // std::cout << "Starting i loop " << i << std::endl;
+                V_hat_columns.push_back(KPVector(A.num_cols()));
                 for(int j = 0; j < A.num_cols(); ++j) {
                     double value = 0;
                     for(int x = 0; x < p; ++x) {
-                        value += A.get(row_indices[x], j) * singular_values(x, i);
+                        value += A.get(row_indices[x], j) * left_singular_vectors(x, i);
+                        // std::cout << "got value " << x << " " << j << " " << i << std::endl;
                     }
                     value /= singular_values(i);
+                    // std::cout << "got singular value " << i << std::endl;
 
                     V_hat_columns[i].set(j, value);
+                    // std::cout << "done with j loop " << j << std::endl;
                 }
             }
+            // std::cout << "Done constructing ModFKV" << std::endl;
         }
 
         int get_rank() const {
-            return p;
+            // return p;
+            // std::cout << "V_hat_columns.size(): " << V_hat_columns.size() << std::endl;
+            return V_hat_columns.size();
         }
 
         const KPVector& get_V_hat_column(int index) const {

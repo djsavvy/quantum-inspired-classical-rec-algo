@@ -41,8 +41,11 @@ int sample_from_distribution(const KPVector& vector, const ModFKV& rank_reductio
         for(int j = 0; j < k; ++j) {
             numerator += vector.get(j) * rank_reduction.get_V_hat_column(j).get(sample);
         }
+        numerator = std::abs(numerator);
+        denominator = std::abs(denominator);
 
-        assert(0 < numerator && numerator <= denominator);
+        // assert(0 < numerator && numerator <= denominator);
+        std::cout << "Probability of acceptance of sample: " << numerator << " / " << denominator << std::endl;
 
         // Accept or reject sample     
         if(unif_dist(rand_eng) < numerator / denominator) {

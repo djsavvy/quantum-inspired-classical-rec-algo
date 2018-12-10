@@ -32,7 +32,7 @@ class TangSampler {
             int k = rank_reduction_.get_rank();
             KPVector est(k);
             for(int t = 0; t < k; ++t) {
-                est.set(k, estimate_dot_product(
+                est.set(t, estimate_dot_product(
                             A_.get_row(user), 
                             rank_reduction_.get_V_hat_column(t),
                             epsilon_,

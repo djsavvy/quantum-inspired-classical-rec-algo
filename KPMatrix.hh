@@ -133,7 +133,8 @@ double KPVector::get(int i) const {
     assert(0 <= i && i < dim);
 
     Node* leaf = find(i);
-    assert(leaf->sign != 0); // make sure it's actually a leaf, and has been set
+    // assert(leaf->sign != 0); // make sure it's actually a leaf, and has been set
+    if(leaf->sign == 0) return 0;
 
     double value = std::sqrt(leaf->weight);    
     if(leaf->sign == -1) {
@@ -143,16 +144,19 @@ double KPVector::get(int i) const {
 }
 
 void KPVector::set(int i, double v) {
+    // std::cout << i << " " << dim << std::endl;
     assert(0 <= i && i < dim);
 
     Node* leaf = find(i);
+    // std::cout << "found leaf" << std::endl;
     double old_weight = leaf->weight;
     leaf->weight = v * v;
     leaf->sign = (v < 0) ? -1 : 1;
 
     // Update parent weights 
-    for(Node* cur_node = leaf->parent; cur_node != nullptr; cur_node = cur_node->parent) {
+    for(Node* cur_node = leaf->parent; cur_node != nullptr && cur_node != cur_node->parent; cur_node = cur_node->parent) {
         cur_node->weight += (leaf->weight - old_weight);        
+        // std::cout << "Updating parent weights" << std::endl;
     }
 }
 
@@ -245,7 +249,7 @@ KPMatrix::KPMatrix(int m, int n) {
         vectors.push_back(new KPVector(n));
     }
     
-    vector_norms = new KPVector(n);
+    vector_norms = new KPVector(m);
     sum_vector_sq_norms = 0;
 }
 
@@ -312,7 +316,7 @@ double estimate_dot_product(const KPVector& x, const KPVector& y,
     assert(x.dimension() == y.dimension());
 
     int num_means = static_cast<int>(std::ceil(-6 * std::log(delta)));
-    double samples_per_mean = static_cast<int>(std::ceil(9/(2 * epsilon * epsilon)));
+    int samples_per_mean = static_cast<int>(std::ceil(9/(2 * epsilon * epsilon)));
     std::vector<double> means;
     means.reserve(num_means);
 
@@ -322,10 +326,16 @@ double estimate_dot_product(const KPVector& x, const KPVector& y,
 
         for(int j = 0; j < samples_per_mean; ++j) {
             int index = x.sample_index();
-            sum += (y.get(index) / x.get(index));
+            if(x.get(index) == 0 || std::isnan(y.get(index))) {
+                // Avoid dividing by zero
+                // --j;
+            } else{
+                sum += (y.get(index) / x.get(index));
+            }
         }
 
         double mean = sum/samples_per_mean;
+        // std::cout << "mean: " << mean << " samples per mean: " << samples_per_mean << std::endl;
         means.push_back(mean);
     }
 
